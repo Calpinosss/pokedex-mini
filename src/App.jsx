@@ -1,36 +1,21 @@
-import SearchForm from "./components/SearchForm.jsx";
-import PokemonList from "./components/PokemonList.jsx";
+import { HashRouter, Routes, Route } from "react-router-dom";
+import Layout from "./components/Layout.jsx";
+import ListPage from "./pages/ListPage.jsx";
+import DetailPage from "./pages/DetailPage.jsx";
+import NotFoundPage from "./pages/NotFoundPage.jsx";
 
 function App() {
   return (
-    <div className="app">
-      <h1>PokéDex Mini</h1>
-      <SearchForm />
-      <PokemonList />
-    </div>
+    <HashRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<ListPage />} />
+          <Route path="/pokemon/:name" element={<DetailPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </HashRouter>
   );
 }
 
 export default App;
-
-// import { HashRouter, Routes, Route } from "react-router-dom";
-// import ListPage from "./pages/ListPage.jsx";
-// import DetailPage from "./pages/DetailPage.jsx";
-// import NotFoundPage from "./pages/NotFoundPage.jsx";
-
-// function App() {
-//   return (
-//     <HashRouter>
-//       <div className="app">
-//         <h1>PokéDex Mini</h1>
-//         <Routes>
-//           <Route path="/" element={<ListPage />} />
-//           <Route path="/pokemon/:name" element={<DetailPage />} />
-//           <Route path="*" element={<NotFoundPage />} />
-//         </Routes>
-//       </div>
-//     </HashRouter>
-//   );
-// }
-
-// export default App;

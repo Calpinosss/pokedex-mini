@@ -1,44 +1,23 @@
 import { useState } from "react";
-
-function capitalize(name) {
-  return name.charAt(0).toUpperCase() + name.slice(1);
-}
+import { useNavigate } from "react-router-dom";
 
 function SearchForm() {
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  async function handleSubmit(event) {
-    event.preventDefault(); // stop the browser's default full-page reload
+  function handleSubmit(event) {
+    event.preventDefault();
 
     const name = query.trim().toLowerCase();
 
     if (name === "") {
       setError("Type a Pokémon name first.");
-      setResult(null);
       return;
     }
 
-    setIsLoading(true);
     setError(null);
-    setResult(null); // clear the old result so a slow new search doesn't show stale data mid-flight
-
-    try {
-      const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${name}`);
-
-      if (!response.ok) {
-        throw new Error(`No Pokémon named "${name}" — check the spelling.`);
-      }
-
-      const data = await response.json();
-      setResult(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
+    navigate(`/pokemon/${name}`);
   }
 
   return (
@@ -56,25 +35,7 @@ function SearchForm() {
         </button>
       </form>
 
-      {isLoading && <p className="status">Looking up {query}…</p>}
       {error && <p className="status status-error">{error}</p>}
-
-      {result && (
-        <div className="search-result">
-          <img
-            src={result.sprites.front_default}
-            alt={result.name}
-            width={64}
-            height={64}
-          />
-          <div>
-            <p className="pokemon-name">{capitalize(result.name)}</p>
-            <p className="pokemon-types">
-              {result.types.map((t) => t.type.name).join(", ")}
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
