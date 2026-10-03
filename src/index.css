@@ -1,127 +1,362 @@
+/* =========================================================================
+   Pokédex Mini — Tokyo Night City design system
+   A layered retro 8-bit/16-bit night scene: a distant pixel skyline and a
+   bright neon street layer (vending machines, street lights, lit windows)
+   sit beneath the app, under a twinkling starfield, with a subtle CRT
+   scanline wash. The UI reads like a retro RPG menu: hard pixel borders,
+   a dark LCD device, and restrained neon accents.
+   Type-based theming still drives the CSS variables the detail screen sets
+   inline. All code and comments in this file stay in English.
+   ========================================================================= */
+
+/* ---------------------------------------------------------------------------
+   Design tokens
+   --------------------------------------------------------------------------- */
+:root {
+  /* Night palette: midnight navy base with dark-purple depth. */
+  --night-deep: #05060f;
+  --night: #0a0d24;
+  --night-mid: #141a3f;
+  --night-purple: #241a54;
+
+  /* Surfaces + ink. */
+  --ink: #e8ebff;
+  --ink-soft: #a6abc9;
+  --ink-dim: #6d739a;
+  --line: #2a2f55;
+  --panel: #10132f;
+  --panel-2: #0b0e24;
+  --well: #070917;
+  --screen-bg: #0a0c1f;
+
+  /* Neon accents + the Pokédex red. */
+  --pokedex-red: #ff2e4c;
+  --pokedex-red-deep: #7a0f22;
+  --neon-cyan: #4fe6d8;
+  --neon-blue: #3fa6ff;
+  --neon-pink: #ff5fa8;
+  --neon-purple: #9d7bff;
+  --neon-gold: #ffd866;
+
+  /* Type-based theming (driven inline by the detail screen). */
+  --type-accent: var(--pokedex-red);
+  --type-soft: transparent;
+  --type-secondary: var(--pokedex-red);
+
+  /* A reusable hard "pixel" shadow: a dark block offset straight down. */
+  --pixel-shadow: 0 4px 0 rgba(4, 5, 15, 0.85);
+
+  /* VT323 = pixel display face (headings, numbers, badges, buttons).
+     A clean system sans for long copy so the body stays comfortable. */
+  --pixel: "VT323", "Courier New", monospace;
+  --sans: "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
 * {
   box-sizing: border-box;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+   The Tokyo night city background.
+   A single full night-city scene (public/city/near.png) is pinned to the
+   viewport as a cover background, sitting behind the device. A solid dark
+   colour (below) shows only until the image finishes loading.
+   --------------------------------------------------------------------------- */
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: #f5f5f5;
-  color: #222;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-family: var(--sans);
+  color: var(--ink);
+  /* A single full night-city scene (the new near.png) covers the whole page
+     behind the device. It is pinned to the viewport so the city stays put
+     while content scrolls; a solid dark colour shows behind it only until
+     the image loads. */
+  background-color: var(--night-deep);
+  background-image: url("/pokedex-mini/city/near.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
 }
 
+/* Crisp pixel rendering for the city layers + pixelated sprites. */
+body,
+.art-sprite,
+.evo-node img {
+  image-rendering: pixelated;
+}
+
+/* A static CRT scanline wash across the whole page: above the city, below
+   the device (z 0). Subtle and performance-cheap. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.18) 0px,
+    rgba(0, 0, 0, 0.18) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.4;
+}
+
+/* A gently "breathing" city-lights reflection + a few twinkling pixel
+   stars in the upper sky, so the scene feels alive without moving anything
+   heavy. Kept on a single pseudo-element to avoid new DOM nodes. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 16%, #cdefff, transparent),
+    radial-gradient(1.5px 1.5px at 34% 9%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 58% 20%, #ffd9f1, transparent),
+    radial-gradient(1.5px 1.5px at 78% 12%, #cdefff, transparent),
+    radial-gradient(1.5px 1.5px at 90% 28%, #ffffff, transparent),
+    radial-gradient(1.5px 1.5px at 46% 6%, #ffe9a8, transparent),
+    radial-gradient(1.5px 1.5px at 68% 30%, #cdefff, transparent),
+    radial-gradient(120% 42% at 50% 102%, rgba(79, 230, 216, 0.16), transparent 72%);
+  animation: city-breathe 7s ease-in-out infinite;
+}
+
+/* Slow, calm twinkle of the star dots + light reflection. */
+@keyframes city-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   The device
+   --------------------------------------------------------------------------- */
 .app {
-  max-width: 480px;
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
   margin: 0 auto;
-  padding: 32px 16px;
+  padding: 24px 16px 56px;
 }
 
-h1 {
+.device {
+  position: relative;
+  background: rgba(11, 14, 36, 0.94);
+  border: 3px solid #04050c;
+  border-radius: 12px;
+  /* A hard pixel block under the device + a soft neon aura. */
+  box-shadow:
+    inset 0 0 0 2px #1a1f42,
+    0 10px 0 rgba(3, 4, 12, 0.75),
+    0 22px 44px -14px rgba(0, 0, 0, 0.85),
+    0 0 44px -14px rgba(157, 123, 255, 0.35);
+  overflow: hidden;
+}
+
+/* A top-edge highlight so the bezel reads as machined plastic. */
+.device::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 8%, rgba(79, 230, 216, 0.5) 50%, transparent 92%);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Header (the Pokédex bezel) — a dark red strip, not a bright flat red.
+   --------------------------------------------------------------------------- */
+.device-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(180deg, #3c0f26 0%, #2a0a1c 55%, #190512 100%);
+  border-bottom: 3px solid #04050c;
+  color: #fff;
+}
+.device-header::after {
+  /* A thin neon key-line under the header. */
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -3px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-pink) 35%, var(--neon-cyan) 75%, transparent);
+  box-shadow: 0 0 8px rgba(79, 230, 216, 0.5);
+  pointer-events: none;
+}
+
+/* Logo lockup in the bezel. */
+.pokedex-logo {
+  display: flex;
+  align-items: center;
+  line-height: 0;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+/* The original logo asset, kept at its native ~2:1 aspect. Pixelated so its
+   blocks stay sharp when the browser scales it down on small screens. */
+.dex-logo {
+  height: 60px;
+  width: auto;
+  display: block;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 0 10px rgba(79, 230, 216, 0.25));
+}
+
+.device-number {
+  font-family: var(--pixel);
+  font-size: 18px;
+  letter-spacing: 1px;
+  background: var(--night-deep);
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(79, 230, 216, 0.6);
+  padding: 5px 12px;
+  border: 2px solid var(--line);
+  box-shadow: inset 0 0 0 2px rgba(4, 5, 15, 0.9);
+  min-width: 108px;
   text-align: center;
-  color: #cc0000;
 }
 
+/* ---------------------------------------------------------------------------
+   The screen
+   --------------------------------------------------------------------------- */
+.device-screen {
+  position: relative;
+  background: var(--screen-bg);
+  /* Digital grid inside the screen. */
+  background-image:
+    linear-gradient(rgba(79, 230, 216, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 230, 216, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Scanline overlay, subtle on the dark screen. */
+.device-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.16) 0px,
+    rgba(0, 0, 0, 0.16) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+.screen-inner {
+  position: relative;
+  z-index: 1;
+  padding: 22px 18px 28px;
+}
+
+/* A screen tinted by the current pokemon's type theme: a soft neon wash in
+   the type's accent colour over the dark screen. */
+.device-screen.themed {
+  background-image:
+    radial-gradient(
+      140% 90% at 50% -10%,
+      color-mix(in srgb, var(--type-accent) 26%, transparent) 0%,
+      transparent 62%
+    ),
+    linear-gradient(rgba(79, 230, 216, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 230, 216, 0.05) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px, 24px 24px;
+}
+
+/* ---------------------------------------------------------------------------
+   Status / loading / error
+   --------------------------------------------------------------------------- */
 .status {
   text-align: center;
-  font-size: 18px;
-  color: #555;
+  font-size: 15px;
+  color: var(--ink-soft);
+  padding: 24px 0;
 }
 
 .status-error {
-  color: #b00020;
-}
-
-.pokemon-list {
-  list-style: none;
-  padding: 0;
-  margin: 24px 0 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.pokemon-list-item {
-  /* visual styling moved to .pokemon-link below, since that's the clickable card now */
-}
-
-.pokemon-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: white;
-  border-radius: 8px;
-  padding: 12px 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-  text-decoration: none;
-  color: inherit;
-}
-
-.pokemon-link:hover {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-}
-
-.back-link {
-  display: inline-block;
-  margin-bottom: 16px;
-  color: #cc0000;
-  text-decoration: none;
+  color: #ff5566;
   font-weight: 600;
+  text-shadow: 0 0 10px rgba(255, 46, 76, 0.4);
 }
 
-.back-link:hover {
-  text-decoration: underline;
+/* Pokéball loading spinner, styled like a pixel game loader. */
+.loading-pokeball {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 14px;
+  border-radius: 4px;
+  border: 3px solid #04050c;
+  background: #f4f6ff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0 16px -4px rgba(79, 230, 216, 0.55);
+  animation: pokeball-spin 0.9s linear infinite;
+}
+.loading-pokeball::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 50%;
+  background: var(--pokedex-red);
+}
+.loading-pokeball::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: #f4f6ff;
+  border: 3px solid #04050c;
 }
 
-.detail-page {
+@keyframes pokeball-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Batch loading progress on the list screen. */
+.progress-note {
+  font-family: var(--pixel);
+  font-size: 16px;
+  color: var(--ink-dim);
   text-align: center;
+  margin-top: 10px;
 }
 
-.detail-page img {
-  margin: 0 auto;
-}
-
-.stat-list {
-  list-style: none;
-  padding: 0;
-  margin: 16px auto 0;
-  max-width: 240px;
-  text-align: left;
-}
-
-.stat-list li {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.stat-name {
-  text-transform: capitalize;
-  color: #666;
-}
-
-.stat-value {
-  font-weight: 600;
-}
-
-.pokemon-sprite {
-  flex-shrink: 0;
-  background: #f0f0f0;
-  border-radius: 6px;
-}
-
-.pokemon-id {
-  font-family: monospace;
-  color: #888;
-  min-width: 48px;
-}
-
-.pokemon-name {
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
+/* ---------------------------------------------------------------------------
+   Search + controls
+   --------------------------------------------------------------------------- */
 .search {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .search-form {
@@ -131,37 +366,1205 @@ h1 {
 
 .search-input {
   flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #ccc;
+  min-width: 0;
+  padding: 11px 14px;
+  border: 2px solid var(--line);
   border-radius: 6px;
-  font-size: 16px;
+  font-family: var(--pixel);
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  background: var(--well);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px rgba(4, 5, 15, 0.9);
+}
+.search-input::placeholder {
+  color: var(--ink-dim);
+  font-family: var(--sans);
+  font-size: 14px;
+  letter-spacing: 0;
+}
+.search-input:focus {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    inset 0 0 0 2px rgba(4, 5, 15, 0.9),
+    0 0 12px -2px rgba(79, 230, 216, 0.6);
 }
 
-.search-button {
-  padding: 8px 16px;
-  border: none;
+/* Retro menu buttons: hard pixel shadow + square-ish corners. */
+.search-button,
+.pager button,
+.surprise-button {
+  padding: 11px 16px;
+  border: 2px solid #04050c;
   border-radius: 6px;
-  background: #cc0000;
-  color: white;
-  font-weight: 600;
+  background: linear-gradient(180deg, #ff5260 0%, var(--pokedex-red) 45%, #a11132 100%);
+  color: #fff;
+  font-family: var(--pixel);
+  font-size: 17px;
+  letter-spacing: 0.5px;
   cursor: pointer;
+  box-shadow: 0 4px 0 rgba(4, 5, 15, 0.85);
+  transition:
+    transform 0.08s ease,
+    box-shadow 0.08s ease,
+    filter 0.15s ease;
+}
+.search-button:hover,
+.pager button:hover:not(:disabled),
+.surprise-button:hover {
+  filter: brightness(1.12);
+}
+.search-button:active,
+.pager button:active:not(:disabled),
+.surprise-button:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(4, 5, 15, 0.85);
+}
+.search-button:focus-visible,
+.pager button:focus-visible,
+.surprise-button:focus-visible {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 4px 0 rgba(4, 5, 15, 0.85),
+    0 0 14px -2px rgba(79, 230, 216, 0.7);
+}
+.search-button:disabled,
+.pager button:disabled,
+.surprise-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+  transform: none;
+  box-shadow: 0 2px 0 rgba(4, 5, 15, 0.85);
 }
 
-.search-button:hover {
-  background: #a00000;
+.tools-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.pokemon-types {
-  color: #666;
+.surprise-button {
+  background: var(--panel);
+  color: var(--neon-cyan);
+  border-color: var(--line);
+  box-shadow: 0 4px 0 rgba(4, 5, 15, 0.85);
+}
+.surprise-button:hover {
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 4px 0 rgba(4, 5, 15, 0.85),
+    0 0 14px -2px rgba(79, 230, 216, 0.55);
+}
+
+.result-count {
+  font-family: var(--pixel);
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  color: var(--ink-soft);
+  margin: 0 0 14px;
+}
+
+/* ---------------------------------------------------------------------------
+   Filters + sorting
+   --------------------------------------------------------------------------- */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+/* Type filter chips: a small pixel menu button. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 5px;
+  border: 2px solid var(--line);
+  background: var(--panel-2);
+  font-family: var(--pixel);
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   text-transform: capitalize;
-  margin: 4px 0 0;
+  box-shadow: 0 3px 0 rgba(4, 5, 15, 0.7);
+}
+.chip:hover {
+  transform: translateY(-1px);
+  border-color: var(--ink-dim);
+}
+.chip:focus-visible {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 3px 0 rgba(4, 5, 15, 0.7),
+    0 0 12px -2px rgba(79, 230, 216, 0.6);
+}
+.chip.is-active {
+  color: #0a0b18;
+  border-color: #04050c;
+  box-shadow: 0 3px 0 rgba(4, 5, 15, 0.85);
+}
+.chip-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid rgba(4, 5, 15, 0.8);
 }
 
-.app-header {
-  margin-bottom: 8px;
+.sort-select {
+  padding: 6px 10px;
+  border: 2px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font-family: var(--pixel);
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(4, 5, 15, 0.7);
+}
+.sort-select:focus-visible {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 3px 0 rgba(4, 5, 15, 0.7),
+    0 0 12px -2px rgba(79, 230, 216, 0.6);
 }
 
-.app-title-link {
+/* ---------------------------------------------------------------------------
+   Type badges (a game-HUD "elemental chip")
+   --------------------------------------------------------------------------- */
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px 4px;
+  border-radius: 3px;
+  font-family: var(--pixel);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 2px solid rgba(4, 5, 15, 0.85);
+  box-shadow: 0 2px 0 rgba(4, 5, 15, 0.7);
+  white-space: nowrap;
+}
+
+.type-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* ---------------------------------------------------------------------------
+   Pokemon card grid — a retro menu-select screen
+   --------------------------------------------------------------------------- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.grid > li {
+  margin: 0;
+}
+
+.tools-label {
+  font-family: var(--pixel);
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.card {
+  position: relative;
+  display: block;
+  background: linear-gradient(180deg, #141838 0%, #0d0f24 100%);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 8px 10px;
+  text-align: center;
   text-decoration: none;
   color: inherit;
+  overflow: hidden;
+  box-shadow: var(--pixel-shadow);
+  transition:
+    transform 0.14s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease;
+}
+/* An inner pixel frame for a machined menu look. */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  pointer-events: none;
+  border: 1px solid rgba(79, 230, 216, 0.12);
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--card-accent, var(--neon-cyan));
+  box-shadow:
+    0 7px 0 rgba(4, 5, 15, 0.75),
+    0 0 18px -6px var(--card-accent, var(--neon-cyan));
+}
+.card:focus-visible {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 4px 0 rgba(4, 5, 15, 0.75),
+    0 0 0 3px rgba(79, 230, 216, 0.35),
+    0 0 18px -6px var(--card-accent, var(--neon-cyan));
+}
+
+/* A subtle "selected" pulse so the card feels alive under the cursor. */
+@keyframes card-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 7px 0 rgba(4, 5, 15, 0.75),
+      0 0 14px -6px var(--card-accent, var(--neon-cyan));
+  }
+  50% {
+    box-shadow:
+      0 7px 0 rgba(4, 5, 15, 0.75),
+      0 0 24px -4px var(--card-accent, var(--neon-cyan));
+  }
+}
+.card:hover {
+  animation: card-pulse 1.6s ease-in-out infinite;
+}
+
+.card-art {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 8px;
+  /* A faint neon spotlight behind the sprite. */
+  background: radial-gradient(circle at 50% 60%, rgba(79, 230, 216, 0.12), transparent 70%);
+  border: 1px solid rgba(42, 47, 85, 0.7);
+}
+.card-art img {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 64px;
+  height: 64px;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.card-art .art-sprite {
+  image-rendering: pixelated;
+}
+.card-art .art-official {
+  opacity: 0;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+}
+.card:hover .art-sprite {
+  opacity: 0;
+  transform: scale(0.92);
+}
+.card:hover .art-official {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.card-id {
+  font-family: var(--pixel);
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+}
+.card-name {
+  font-family: var(--pixel);
+  font-size: 19px;
+  line-height: 1.1;
+  text-transform: capitalize;
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.card-types {
+  margin-top: 6px;
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.card-types .type-badge {
+  padding: 2px 7px 3px;
+  font-size: 13px;
+}
+.card-bst {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--pixel);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: var(--ink-soft);
+}
+
+/* Pagination */
+.pager {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 20px;
+  align-items: center;
+}
+.pager .pager-label {
+  font-family: var(--pixel);
+  font-size: 17px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  margin: 0 6px;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--ink-soft);
+  padding: 34px 0;
+}
+.empty-state .ghost {
+  font-size: 44px;
+  margin-bottom: 8px;
+  /* Cool the emoji down to a game-HUD blue ghost. */
+  filter: grayscale(0.4) brightness(1.25) drop-shadow(0 0 10px rgba(63, 166, 255, 0.55));
+}
+
+/* ---------------------------------------------------------------------------
+   Detail screen — "opening the Pokédex entry"
+   --------------------------------------------------------------------------- */
+.detail-page {
+  display: grid;
+  gap: 18px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-family: var(--pixel);
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  color: var(--neon-cyan);
+  text-decoration: none;
+  text-shadow: 0 0 10px rgba(79, 230, 216, 0.45);
+}
+.back-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 2px;
+}
+
+.detail-top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+  align-items: start;
+}
+
+.detail-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-name {
+  font-family: var(--pixel);
+  font-size: 42px;
+  line-height: 1.05;
+  margin: 0;
+  text-transform: capitalize;
+  letter-spacing: 1px;
+  color: #fff;
+  text-shadow:
+    0 0 20px color-mix(in srgb, var(--type-accent, var(--neon-cyan)) 55%, transparent),
+    0 3px 0 rgba(4, 5, 15, 0.7);
+}
+
+.detail-number {
+  font-family: var(--pixel);
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--ink-soft);
+}
+
+/* A framed portrait, like a game sprite slot. */
+.detail-portrait {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  border-radius: 10px;
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--type-accent, var(--neon-cyan)) 22%, #0e1022) 0%,
+    #0e1022 78%
+  );
+  border: 2px solid var(--type-accent, var(--line));
+  box-shadow:
+    0 0 0 4px rgba(4, 5, 15, 0.75),
+    0 0 24px -6px color-mix(in srgb, var(--type-accent, var(--neon-cyan)) 55%, transparent),
+    inset 0 0 0 2px rgba(4, 5, 15, 0.5);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.detail-portrait img {
+  max-width: 88%;
+  max-height: 88%;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.6));
+}
+
+/* Detail action buttons: pixel buttons on a dark base. */
+.detail-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.detail-actions .pager {
+  margin: 0;
+  padding: 8px 14px;
+  font-family: var(--pixel);
+  font-size: 16px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  border-radius: 5px;
+  box-shadow: 0 3px 0 rgba(4, 5, 15, 0.75);
+}
+.detail-actions .pager:hover {
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  box-shadow:
+    0 3px 0 rgba(4, 5, 15, 0.75),
+    0 0 12px -2px rgba(79, 230, 216, 0.55);
+}
+
+/* Dark data panels with a subtle neon key-edge on top. */
+.panel {
+  position: relative;
+  background: linear-gradient(180deg, #12152e 0%, #0b0e24 100%);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow:
+    inset 0 0 0 2px rgba(4, 5, 15, 0.85),
+    0 4px 0 rgba(4, 5, 15, 0.7);
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: -2px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan) 30%, var(--neon-purple) 70%, transparent);
+  box-shadow: 0 0 8px rgba(157, 123, 255, 0.45);
+  pointer-events: none;
+}
+
+.panel-title {
+  font-family: var(--pixel);
+  font-size: 20px;
+  letter-spacing: 2px;
+  color: var(--neon-cyan);
+  text-shadow: 0 0 12px rgba(79, 230, 216, 0.45);
+  margin: 0 0 12px;
+}
+
+/* Stats panel combines the radar + bars + total. */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.bst-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 2px dashed var(--line);
+}
+.bst-value {
+  font-family: var(--pixel);
+  font-size: 44px;
+  line-height: 1;
+  color: var(--type-accent, var(--neon-cyan));
+  text-shadow: 0 0 16px color-mix(in srgb, var(--type-accent, var(--neon-cyan)) 55%, transparent);
+}
+.bst-caption {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.bst-caption strong {
+  color: var(--ink);
+}
+
+/* Radar chart */
+.radar {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Stat bars */
+.stat-bars {
+  display: grid;
+  gap: 8px;
+}
+.stat-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 36px;
+  gap: 8px;
+  align-items: center;
+}
+.stat-abbrev {
+  font-family: var(--pixel);
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.stat-track {
+  height: 12px;
+  background: var(--well);
+  border: 2px solid var(--line);
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+.stat-fill {
+  height: 100%;
+  width: 0;
+  background: var(--type-accent, var(--neon-cyan));
+  box-shadow: 0 0 8px -1px color-mix(in srgb, var(--type-accent, var(--neon-cyan)) 65%, transparent);
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+  /* A hard pixel edge on the right side of the fill. */
+  border-right: 2px solid rgba(4, 5, 15, 0.6);
+}
+.stat-num {
+  font-family: var(--pixel);
+  font-size: 17px;
+  color: var(--ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Info rows: height/weight/catch-rate/etc. */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.info-key {
+  font-family: var(--pixel);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+}
+.info-val {
+  font-family: var(--pixel);
+  font-size: 20px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+/* Flavor text */
+.flavor {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--type-soft) 14%, var(--well));
+  border: 2px solid var(--line);
+  border-left: 4px solid var(--type-accent, var(--line));
+  border-radius: 6px;
+  padding: 12px 14px;
+  box-shadow: 0 3px 0 rgba(4, 5, 15, 0.7);
+}
+.flavor-source {
+  display: block;
+  margin-top: 6px;
+  font-family: var(--pixel);
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  color: var(--ink-dim);
+}
+
+/* ---------------------------------------------------------------------------
+   Evolution chain — a pixel "path" between sprites
+   --------------------------------------------------------------------------- */
+.evo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.evo-branch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.evo-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 96px;
+  background: linear-gradient(180deg, #141838 0%, #0d0f24 100%);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 6px;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 4px 0 rgba(4, 5, 15, 0.7);
+  transition:
+    transform 0.12s ease,
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.evo-node:hover {
+  transform: translateY(-2px);
+  border-color: var(--type-accent, var(--neon-cyan));
+  box-shadow:
+    0 6px 0 rgba(4, 5, 15, 0.7),
+    0 0 16px -4px color-mix(in srgb, var(--type-accent, var(--neon-cyan)) 60%, transparent);
+}
+.evo-node:focus-visible {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 4px 0 rgba(4, 5, 15, 0.7),
+    0 0 0 3px rgba(79, 230, 216, 0.4);
+}
+.evo-node img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+}
+.evo-name {
+  font-family: var(--pixel);
+  font-size: 17px;
+  letter-spacing: 0.5px;
+  text-transform: capitalize;
+  color: var(--ink);
+}
+.evo-num {
+  font-family: var(--pixel);
+  font-size: 14px;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+}
+.evo-condition {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  text-align: center;
+  min-width: 52px;
+}
+.evo-arrow {
+  font-family: var(--pixel);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--type-accent, var(--neon-cyan));
+  font-weight: 700;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--type-accent, var(--neon-cyan)) 55%, transparent);
+}
+
+/* A node with several children stacks them in a vertical branch. */
+.evo-children {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-left: 8px;
+  padding-left: 14px;
+  border-left: 2px dashed var(--line);
+  align-items: flex-start;
+}
+
+/* Effectiveness panel */
+.eff-groups {
+  display: grid;
+  gap: 12px;
+}
+.eff-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.eff-label {
+  font-family: var(--pixel);
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink-dim);
+  width: 100%;
+  margin-bottom: 2px;
+}
+.multiplier {
+  font-family: var(--pixel);
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.8;
+  margin-left: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   404
+   --------------------------------------------------------------------------- */
+.notfound {
+  text-align: center;
+  padding: 40px 0;
+}
+.notfound .ghost {
+  font-size: 48px;
+  margin-bottom: 12px;
+  filter: grayscale(0.4) brightness(1.25) drop-shadow(0 0 10px rgba(63, 166, 255, 0.55));
+}
+.notfound p {
+  color: var(--ink-soft);
+}
+
+/* ---------------------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .app {
+    padding: 12px 8px 40px;
+    max-width: 100%;
+  }
+  .device-header {
+    padding: 12px 12px;
+  }
+  .dex-logo {
+    height: 44px;
+  }
+  .device-number {
+    min-width: 92px;
+    font-size: 16px;
+  }
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .detail-top {
+    grid-template-columns: 1fr;
+  }
+  .detail-portrait {
+    margin: 0 auto;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .radar {
+    max-width: 260px;
+    margin: 0 auto;
+  }
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  /* Keep the cover scene pinned on narrow screens too. */
+  body {
+    background-size: cover;
+    background-position: center;
+  }
+}
+
+@media (max-width: 400px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .device-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dex-logo {
+    height: 38px;
+  }
+  .device-number {
+    font-size: 15px;
+    min-width: 80px;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Reduced motion: stop the spinner, star twinkles, card pulse and all
+   transitions.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .loading-pokeball {
+    animation: none;
+  }
+  .stat-fill {
+    transition: none;
+  }
+  .card,
+  .chip,
+  .evo-node,
+  .card-art img {
+    transition: none;
+  }
+  .card {
+    animation: none;
+  }
+  body::after {
+    animation: none;
+    opacity: 0.4;
+  }
+}
+
+/* =========================================================================
+   Favorites + Compare — new feature styles. These only add rules for the
+   new classes; every existing selector above is left untouched.
+   ========================================================================= */
+
+/* --- Favorite star button -------------------------------------------------
+   Default (card corner): a small dark pixel chip pinned to the top-right of
+   the card. Reused inline in the detail actions row, where it drops the
+   absolute positioning. */
+.fav-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 3;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  background: rgba(4, 5, 15, 0.72);
+  border: 2px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink-dim);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 0 rgba(4, 5, 15, 0.7);
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease,
+    transform 0.08s ease;
+}
+.fav-btn:hover {
+  color: var(--neon-gold);
+  border-color: var(--neon-gold);
+  transform: scale(1.08);
+}
+.fav-btn.is-active {
+  color: var(--neon-gold);
+  border-color: var(--neon-gold);
+  text-shadow: 0 0 8px rgba(255, 216, 102, 0.6);
+}
+.fav-btn:focus-visible {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 2px 0 rgba(4, 5, 15, 0.7),
+    0 0 12px -2px rgba(79, 230, 216, 0.7);
+}
+/* Inline variant inside the detail actions row. */
+.detail-actions .fav-btn {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 8px 14px;
+  font-family: var(--pixel);
+  font-size: 16px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 5px;
+  box-shadow: 0 3px 0 rgba(4, 5, 15, 0.75);
+}
+
+/* --- Header quick links (compare + favorites) --------------------------- */
+.device-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.header-icon-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--pixel);
+  font-size: 17px;
+  line-height: 1;
+  color: var(--neon-cyan);
+  text-decoration: none;
+  padding: 4px 8px;
+  border: 2px solid var(--line);
+  border-radius: 5px;
+  background: var(--panel-2);
+  box-shadow: 0 2px 0 rgba(4, 5, 15, 0.7);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+.header-icon-link:hover {
+  color: var(--neon-gold);
+  border-color: var(--neon-gold);
+}
+.header-icon-link:focus-visible {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 2px 0 rgba(4, 5, 15, 0.7),
+    0 0 12px -2px rgba(79, 230, 216, 0.7);
+}
+.fav-count-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--pokedex-red);
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* --- Favorites page ------------------------------------------------------ */
+.favorites-heading {
+  font-family: var(--pixel);
+  font-size: 34px;
+  letter-spacing: 3px;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 216, 102, 0.4);
+  margin: 0 0 14px;
+}
+
+/* --- Compare page -------------------------------------------------------- */
+.compare-page {
+  display: grid;
+  gap: 16px;
+}
+.compare-heading {
+  font-family: var(--pixel);
+  font-size: 34px;
+  letter-spacing: 3px;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(79, 230, 216, 0.4);
+  margin: 0 0 4px;
+}
+
+.compare-selectors {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.compare-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 180px;
+  min-width: 160px;
+}
+.compare-slot-label {
+  font-family: var(--pixel);
+  font-size: 14px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.compare-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  border: 2px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  font-family: var(--pixel);
+  font-size: 16px;
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(4, 5, 15, 0.7);
+}
+.compare-select:focus-visible {
+  outline: none;
+  border-color: var(--neon-cyan);
+  box-shadow:
+    0 3px 0 rgba(4, 5, 15, 0.7),
+    0 0 12px -2px rgba(79, 230, 216, 0.6);
+}
+.compare-vs {
+  font-family: var(--pixel);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--neon-pink);
+  text-shadow: 0 0 10px rgba(255, 95, 168, 0.5);
+  padding: 0 2px;
+  flex: 0 0 auto;
+}
+
+.compare-portraits {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+.compare-portrait {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.compare-portrait img {
+  width: 130px;
+  height: 130px;
+  border-radius: 10px;
+  background: var(--well);
+  border: 2px solid var(--line);
+  box-shadow: 0 0 0 4px rgba(4, 5, 15, 0.7), 0 0 20px -8px rgba(79, 230, 216, 0.4);
+  object-fit: contain;
+}
+.compare-portrait-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.compare-portrait-name {
+  font-family: var(--pixel);
+  font-size: 22px;
+  letter-spacing: 0.5px;
+  color: var(--ink);
+}
+.compare-portrait-bst {
+  font-family: var(--pixel);
+  font-size: 15px;
+  color: var(--ink-dim);
+}
+
+.compare-radar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.compare-radar {
+  width: 100%;
+  max-width: 240px;
+  height: auto;
+  display: block;
+}
+.compare-legend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  font-family: var(--pixel);
+  font-size: 15px;
+  letter-spacing: 0.5px;
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(4, 5, 15, 0.8);
+}
+
+/* Side-by-side stat table for the comparison. */
+.compare-stats-table {
+  overflow-x: auto;
+  background: linear-gradient(180deg, #12152e 0%, #0b0e24 100%);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 0 2px rgba(4, 5, 15, 0.85),
+    0 4px 0 rgba(4, 5, 15, 0.7);
+  padding: 4px;
+}
+.compare-stats-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--pixel);
+  font-size: 18px;
+  min-width: 320px;
+}
+.compare-stats-table th,
+.compare-stats-table td {
+  padding: 8px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+.compare-stats-table thead th {
+  font-size: 16px;
+  letter-spacing: 1px;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--line);
+}
+.compare-stats-table td:first-child,
+.compare-stats-table th:first-child {
+  text-align: left;
+  color: var(--ink-soft);
+}
+.compare-stats-table td {
+  color: var(--ink);
+}
+/* Highlight the row's winner with a subtle glow. */
+.stat-row-a-wins td:nth-child(2) {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 8px rgba(79, 230, 216, 0.5);
+}
+.stat-row-b-wins td:nth-child(3) {
+  color: var(--neon-pink);
+  text-shadow: 0 0 8px rgba(255, 95, 168, 0.5);
+}
+.compare-stats-table tfoot td {
+  border-bottom: none;
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Compact the compare portrait row on narrow screens. */
+@media (max-width: 640px) {
+  .compare-portraits {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+  .compare-portraits .compare-radar-wrap {
+    order: 3;
+  }
+  .compare-selectors {
+    gap: 8px;
+  }
+  .compare-vs {
+    align-self: center;
+  }
 }

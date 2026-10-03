@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 
+// let ScrollToTop handle scrolling; stop the browser restoring old scroll positions
+window.history.scrollRestoration = "manual";
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <App />
